@@ -88,22 +88,19 @@ const putInCache = async (request: Request, response: Response) => {
 };
 
 const caching = async (request: Request) => {
-  try {
-    const responseFromNetwork = await fetch(request);
+  const responseFromNetwork = await fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        putInCache(request, response.clone());
+      }
 
-    if (responseFromNetwork.ok) {
-      putInCache(request, responseFromNetwork.clone());
-    }
+      return response;
+    })
+    .catch(() => {
+      return caches.match(request);
+    });
 
-    return responseFromNetwork;
-  } catch (responseFromNetwork) {
-    const responseFromCache = await caches.match(request);
-    if (responseFromCache) {
-      return responseFromCache;
-    }
-  }
-
-  return fetch(request);
+  return responseFromNetwork || new Response('Internal server error', { status: 500 });
 };
 
 self.addEventListener('fetch', (event) => {
