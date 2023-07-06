@@ -1,25 +1,36 @@
-import React from 'react';
-import logo from './logo.svg';
+import { useEffect, useState } from 'react';
 import './App.css';
+import { CharacterType } from './types';
+import CharacterCard from './components/CharacterCard';
+import { Button, Col, Row } from 'antd';
+import { hpServices } from './services/hpServices';
 
 function App() {
+  const [characters, setCharacters] = useState<CharacterType[]>();
+
+  useEffect(() => {
+    (async () => {
+      const res = await hpServices.getCharacters();
+      setCharacters(res.data);
+    })();
+  }, []);
+
+  const onRefetch = async () => {
+    const res = await hpServices.getCharacters();
+    setCharacters(res.data);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Row gutter={[0, 12]}>
+      <Col span={24}>
+        <Button onClick={onRefetch}>refetch</Button>
+      </Col>
+      {characters?.map((character, index) => (
+        <Col span={8} key={`${character.name}${index}`}>
+          <CharacterCard character={character} />
+        </Col>
+      ))}
+    </Row>
   );
 }
 
