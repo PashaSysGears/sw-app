@@ -87,22 +87,21 @@ const putInCache = async (request: Request, response: Response) => {
   await cache.put(request, response);
 };
 
-const caching = async (request: Request) => {
-  const responseFromNetwork = await fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        putInCache(request, response.clone());
-      }
+const writeToCacheAndReturn = async (request: Request) => {
+  const cachedResponse = await caches.match(request);
+  if (!navigator.onLine && cachedResponse) {
+    return cachedResponse;
+  }
 
-      return response;
-    })
-    .catch(() => {
-      return caches.match(request);
-    });
+  const response = await fetch(request);
 
-  return responseFromNetwork || new Response('Internal server error', { status: 500 });
+  if (response.ok) {
+    putInCache(request, response.clone());
+  }
+
+  return response;
 };
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(caching(event.request));
+  event.respondWith(writeToCacheAndReturn(event.request));
 });
